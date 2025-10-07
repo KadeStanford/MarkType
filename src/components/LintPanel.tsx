@@ -1,47 +1,52 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
 
-type Issue = { lineNumber: number; ruleNames: string[]; ruleDescription: string; errorDetail?: string }
+type Issue = {
+  lineNumber: number;
+  ruleNames: string[];
+  ruleDescription: string;
+  errorDetail?: string;
+};
 
 export default function LintPanel({ text }: { text: string }) {
-  const [issues, setIssues] = useState<Issue[] | null>(null)
+  const [issues, setIssues] = useState<Issue[] | null>(null);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     const run = async () => {
       try {
-        const markdownlint = await import('markdownlint')
+        const markdownlint = await import("markdownlint");
         const options = {
           strings: { content: text },
-          config: { default: true }
-        } as any
+          config: { default: true },
+        } as any;
 
-        const result = (markdownlint as any).sync(options)
-        const errs = result.content || {}
-        const list: Issue[] = []
+        const result = (markdownlint as any).sync(options);
+        const errs = result.content || {};
+        const list: Issue[] = [];
         for (const r of Object.values(errs)) {
           for (const e of r as any[]) {
             list.push({
               lineNumber: e.lineNumber,
               ruleNames: e.ruleNames,
               ruleDescription: e.ruleDescription,
-              errorDetail: e.errorDetail
-            })
+              errorDetail: e.errorDetail,
+            });
           }
         }
-        if (active) setIssues(list)
+        if (active) setIssues(list);
       } catch (err) {
-        if (active) setIssues(null)
+        if (active) setIssues(null);
       }
-    }
+    };
 
-    const id = setTimeout(run, 350)
+    const id = setTimeout(run, 350);
     return () => {
-      active = false
-      clearTimeout(id)
-    }
-  }, [text])
+      active = false;
+      clearTimeout(id);
+    };
+  }, [text]);
 
-  if (!issues) return null
+  if (!issues) return null;
 
   return (
     <aside className="lint-panel">
@@ -53,12 +58,15 @@ export default function LintPanel({ text }: { text: string }) {
           {issues.map((it, idx) => (
             <li key={idx}>
               <span className="ln">Ln {it.lineNumber}</span>
-              <span className="rule">{it.ruleNames.join(', ')}</span>
-              <div className="desc">{it.ruleDescription} {it.errorDetail ? `— ${it.errorDetail}` : ''}</div>
+              <span className="rule">{it.ruleNames.join(", ")}</span>
+              <div className="desc">
+                {it.ruleDescription}{" "}
+                {it.errorDetail ? `— ${it.errorDetail}` : ""}
+              </div>
             </li>
           ))}
         </ul>
       )}
     </aside>
-  )
+  );
 }
