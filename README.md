@@ -1,9 +1,11 @@
 # MarkType — Real-time Markdown Editor
 
 Motivation
+
 - Markdown is the de-facto standard for documentation, but editing it often requires a separate preview step. MarkType provides instant visual feedback in the browser while you type.
 
 What
+
 - MarkType is a small single-page React + TypeScript app that shows a split view: an editor on the left and a live preview on the right. It uses `marked` to convert Markdown to HTML and `dompurify` to sanitize the output.
 
 How to run
@@ -30,6 +32,7 @@ npm run preview
 ```
 
 Project structure
+
 - `index.html` — app entry
 - `src/main.tsx` — app bootstrap
 - `src/App.tsx` — main parent component (holds markdown state)
@@ -38,8 +41,11 @@ Project structure
 - `src/styles.css` — app styles
 
 Notes
+
 - I kept the Vite config minimal to avoid ESM plugin resolution issues on some systems. If you want to add `@vitejs/plugin-react`, ensure the environment supports ESM imports for plugins or use a matching plugin version for your Vite installation.
 
 License
+
 - MIT
+
 # MarkType
