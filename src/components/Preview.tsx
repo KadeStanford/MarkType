@@ -1,14 +1,14 @@
-import React from 'react'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
+import React from "react";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 type PreviewProps = {
-  markdown: string
-}
+  markdown: string;
+};
 
 export default function Preview({ markdown }: PreviewProps) {
-  const html = marked.parse(markdown)
-  const clean = DOMPurify.sanitize(html)
+  const html = marked.parse(markdown);
+  const clean = DOMPurify.sanitize(html);
 
   return (
     <div className="preview">
@@ -17,5 +17,5 @@ export default function Preview({ markdown }: PreviewProps) {
         dangerouslySetInnerHTML={{ __html: clean }}
       />
     </div>
-  )
+  );
 }

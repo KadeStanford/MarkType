@@ -11,3 +11,12 @@ yarn-error.log*
 .npm
 .DS_Store
 Thumbs.db
+ 
+# Generated user manual (docx) and Word temp files
+docs/*.docx
+docs/**/*.docx
+~$*.docx
+docs/~$*.docx
+
+# Local scripts not intended for commit
+scripts/generate-docx.js

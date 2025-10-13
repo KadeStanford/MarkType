@@ -1,9 +1,9 @@
-import React from 'react'
+import React from "react";
 
 type EditorProps = {
-  value: string
-  onChange: (v: string) => void
-}
+  value: string;
+  onChange: (v: string) => void;
+};
 
 export default function Editor({ value, onChange }: EditorProps) {
   return (
@@ -15,5 +15,5 @@ export default function Editor({ value, onChange }: EditorProps) {
         aria-label="Markdown editor"
       />
     </div>
-  )
+  );
 }

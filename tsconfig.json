@@ -9,7 +9,7 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-  "module": "NodeNext",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "baseUrl": ".",
     "resolveJsonModule": true,
