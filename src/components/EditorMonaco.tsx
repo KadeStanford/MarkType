@@ -5,12 +5,14 @@ type Props = {
   value: string;
   onChange: (v: string) => void;
   theme?: "light" | "dark";
+  fontSize?: number;
 };
 
 export default function EditorMonaco({
   value,
   onChange,
   theme = "light",
+  fontSize = 14,
 }: Props) {
   const editorRef = useRef<any>(null);
 
@@ -20,7 +22,7 @@ export default function EditorMonaco({
   };
 
   return (
-    <div style={{ height: "100%" }}>
+    <div className="editor-container">
       <Editor
         height="100%"
         defaultLanguage="markdown"
@@ -32,6 +34,7 @@ export default function EditorMonaco({
           automaticLayout: true,
           minimap: { enabled: false },
           glyphMargin: false,
+          fontSize: fontSize,
         }}
       />
     </div>

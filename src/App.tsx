@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Editor from "./components/EditorMonaco";
 import Preview from "./components/Preview";
 import LintPanel from "./components/LintPanel";
 
-const DEFAULT_MARKDOWN = `# Welcome to MarkType
+  const DEFAULT_MARKDOWN = `# Welcome to MarkType
 
 This is a simple real-time Markdown editor and previewer built with React + TypeScript.
 
@@ -13,11 +13,105 @@ This is a simple real-time Markdown editor and previewer built with React + Type
 **Enjoy!**`;
 
 export default function App() {
-  const [markdown, setMarkdown] = useState<string>(DEFAULT_MARKDOWN);
+  const [markdown, setMarkdown] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("marktype:content");
+      return saved || DEFAULT_MARKDOWN;
+    } catch (err) {
+      return DEFAULT_MARKDOWN;
+    }
+  });
+  const saveTimerRef = useRef<number | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("marktype:theme");
     return (saved as "light" | "dark") || "light";
   });
+
+  const [previewFont, setPreviewFont] = useState<number>(() => {
+    const saved = localStorage.getItem("marktype:previewFont");
+    return saved ? Number(saved) : 16;
+  });
+  const [editorFont, setEditorFont] = useState<number>(() => {
+    const saved = localStorage.getItem("marktype:editorFont");
+    return saved ? Number(saved) : 14;
+  });
+
+  const [lintHeight, setLintHeight] = useState<number>(220);
+  const draggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+
+  const onMouseMove = useCallback((e: MouseEvent | PointerEvent) => {
+    if (!draggingRef.current) return;
+    const clientY = (e as MouseEvent).clientY ?? (e as PointerEvent).clientY;
+    const dy = startYRef.current - clientY; // drag up to increase height
+    const newH = Math.max(80, startHeightRef.current + dy);
+    // batch updates via rAF for smoother, snappy resizing
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setLintHeight(newH);
+      rafRef.current = null;
+    });
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    draggingRef.current = false;
+    document.body.style.cursor = "";
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", onMouseUp);
+  document.removeEventListener("pointermove", onMouseMove as EventListener);
+  document.removeEventListener("pointerup", onMouseUp as EventListener);
+    // re-enable text selection
+    document.body.style.userSelect = "";
+    document.body.style.webkitUserSelect = "";
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, [onMouseMove]);
+
+  // Ensure listeners cleaned up on unmount
+  useEffect(() => {
+    return () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("pointermove", onMouseMove as EventListener);
+        document.removeEventListener("pointerup", onMouseUp as EventListener);
+      // cleanup rAF and selection style
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      document.body.style.userSelect = "";
+      document.body.style.webkitUserSelect = "";
+    };
+  }, [onMouseMove, onMouseUp]);
+
+  const handleStartDrag = (e: React.MouseEvent | React.PointerEvent) => {
+    // prevent native behaviors like text selection / touch scroll
+    e.preventDefault();
+    draggingRef.current = true;
+    startYRef.current = (e as any).clientY;
+    startHeightRef.current = lintHeight;
+    document.body.style.cursor = "ns-resize";
+    // disable text selection while dragging to avoid accidental selection
+    document.body.style.userSelect = "none";
+    document.body.style.webkitUserSelect = "none";
+    // try to capture the pointer so drags stay with the handle
+    try {
+      if ((e as any).pointerId && (e.currentTarget as any).setPointerCapture) {
+        (e.currentTarget as any).setPointerCapture((e as any).pointerId);
+      }
+    } catch (err) {
+      /* ignore */
+    }
+    // attach listeners for the drag (pointer + mouse for broader support)
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("pointermove", onMouseMove as EventListener);
+    document.addEventListener("pointerup", onMouseUp as EventListener);
+  };
 
   useEffect(() => {
     try {
@@ -28,11 +122,68 @@ export default function App() {
     }
   }, [theme]);
 
+  // Persist markdown content with debounce
+  useEffect(() => {
+    try {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current as any);
+      }
+      saveTimerRef.current = window.setTimeout(() => {
+        try {
+          localStorage.setItem("marktype:content", markdown);
+        } catch (err) {}
+        saveTimerRef.current = null;
+      }, 500);
+    } catch (err) {
+      /* ignore */
+    }
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current as any);
+        saveTimerRef.current = null;
+      }
+    };
+  }, [markdown]);
+
   return (
     <div className={`app`} data-theme={theme}>
       <header className="app-header">
-        <div>MarkType — Live Markdown Editor</div>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div>MarkType — Live Markdown Editor</div>
+        </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label style={{ fontSize: 12 }}>Editor font</label>
+          <input
+            type="range"
+            min={12}
+            max={24}
+            value={editorFont}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setEditorFont(v);
+              try {
+                localStorage.setItem("marktype:editorFont", String(v));
+              } catch (err) {}
+            }}
+            aria-label="Editor font size"
+          />
+          <div style={{ minWidth: 36, textAlign: 'right' }}>{editorFont}px</div>
+          <label style={{ fontSize: 12 }}>Preview font</label>
+          <input
+            type="range"
+            min={12}
+            max={24}
+            value={previewFont}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setPreviewFont(v);
+              try {
+                localStorage.setItem("marktype:previewFont", String(v));
+              } catch (err) {}
+            }}
+            aria-label="Preview font size"
+          />
+          <div style={{ minWidth: 36, textAlign: 'right' }}>{previewFont}px</div>
           <button
             className="theme-toggle"
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
@@ -42,14 +193,23 @@ export default function App() {
           </button>
         </div>
       </header>
-      <main className="split">
-        <section className="pane">
-          <Editor value={markdown} onChange={setMarkdown} theme={theme} />
+      <main className="main-with-console">
+        <div className="split top-area">
+          <section className="pane">
+            <Editor value={markdown} onChange={setMarkdown} theme={theme} fontSize={editorFont} />
+          </section>
+          <section className="pane">
+            <Preview markdown={markdown} fontSize={previewFont} />
+          </section>
+        </div>
+
+        <div className="resizer" onMouseDown={handleStartDrag} onPointerDown={handleStartDrag} title="Drag to resize lint console" role="separator" aria-orientation="horizontal" aria-label="Resize lint console">
+          <div className="resizer-handle" aria-hidden="true" />
+        </div>
+
+        <div className="bottom-lint" style={{ height: Math.max(lintHeight, 120), minHeight: 120 }}>
           <LintPanel text={markdown} />
-        </section>
-        <section className="pane">
-          <Preview markdown={markdown} />
-        </section>
+        </div>
       </main>
       <footer className="app-footer">Made by Group NoNameFound</footer>
     </div>

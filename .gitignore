@@ -20,3 +20,10 @@ docs/~$*.docx
 
 # Local scripts not intended for commit
 scripts/generate-docx.js
+scripts/generate-pptx.js
+
+# Generated presentations (pptx) and Office temp files
+docs/*.pptx
+docs/**/*.pptx
+~$*.pptx
+docs/~$*.pptx

@@ -7,6 +7,13 @@
   --preview-bg: #fff;
   --accent: #2563eb;
   --toggle-border: rgba(0, 0, 0, 0.08);
+  --resizer-handle-bg-light: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06),
+    rgba(0, 0, 0, 0.12)
+  );
+  --resizer-handle-border-light: rgba(0, 0, 0, 0.14);
+  --md-th-bg-light: rgba(0,0,0,0.03);
 }
 
 [data-theme="dark"] {
@@ -18,6 +25,16 @@
   --preview-bg: #04121a;
   --accent: #60a5fa;
   --toggle-border: rgba(255, 255, 255, 0.12);
+  --resizer-handle-bg-dark: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.12)
+  );
+  --resizer-handle-border-dark: rgba(255, 255, 255, 0.18);
+  /* make th/bg lighter than page bg in dark mode for contrast */
+  --md-th-bg-dark: rgba(255,255,255,0.06);
+  --md-block-bg-dark: rgba(255,255,255,0.07);
+  --md-inline-bg-dark: rgba(255,255,255,0.04);
 }
 
 * {
@@ -66,6 +83,73 @@ body {
   min-height: 0;
 }
 
+.main-with-console {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.top-area {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  flex: 1 1 0%;
+  min-height: 0; /* allow it to shrink when bottom area grows */
+  overflow: auto;
+}
+
+.resizer {
+  /* taller hit area for easier grabbing */
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  background: transparent;
+  position: relative;
+  z-index: 60; /* keep above editor/preview content */
+  touch-action: none; /* improve touch responsiveness */
+}
+
+.resizer-handle {
+  width: 160px;
+  height: 12px;
+  border-radius: 6px;
+  /* theme-aware background */
+  background: var(--resizer-handle-bg-light);
+  border: 1px solid var(--resizer-handle-border-light);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  pointer-events: auto;
+}
+.resizer:hover .resizer-handle,
+.resizer:active .resizer-handle {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.14),
+    rgba(37, 99, 235, 0.2)
+  );
+}
+
+/* dark theme overrides */
+[data-theme="dark"] .resizer-handle {
+  background: var(--resizer-handle-bg-dark);
+  border: 1px solid var(--resizer-handle-border-dark);
+}
+
+.bottom-lint {
+  background: var(--pane-bg);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  /* ensure the panel doesn't collapse too small */
+  min-height: 120px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
 .editor-container {
   flex: 1;
   height: 100%;
@@ -74,33 +158,117 @@ body {
 }
 
 .preview {
-  padding: 12px;
-  overflow: auto;
+  padding: 18px;
   background: var(--preview-bg);
   color: var(--fg);
+  font-size: 16px; /* larger base font for preview */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0; /* allow this pane to shrink inside the split */
 }
+
 .preview-content {
   color: var(--fg);
+  flex: 1 1 0%;
+  overflow: auto; /* scroll long content inside preview */
 }
+
 .preview-content h1,
 .preview-content h2,
-.preview-content h3 {
+.preview-content h3 { color: var(--fg); }
+.preview-content h3 { font-size: 1.25rem; }
+.preview-content p { line-height: 1.6; }
+.preview-content a { color: var(--accent); }
+
+/* Code block styling (theme-aware) */
+.preview-content pre {
+  background: var(--md-block-bg-light);
+  border: 1px solid var(--md-block-border-light);
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.preview-content code {
+  background: var(--md-inline-bg-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+/* Table styling */
+.preview-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+.preview-content th,
+.preview-content td {
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.preview-content th {
+  background: var(--md-th-bg-light);
+  font-weight: 600;
+  /* ensure header cells are visually distinct in dark mode */
+  /* dark theme overrides below will increase contrast */
+}
+.preview-content td { white-space: normal; }
+
+/* Blockquote */
+.preview-content blockquote {
+  background: var(--md-quote-bg-light);
+  border-left: 3px solid rgba(0,0,0,0.08);
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+
+/* dark theme block overrides */
+[data-theme="dark"] .preview-content pre {
+  background: var(--md-block-bg-dark);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+[data-theme="dark"] .preview-content code {
+  background: var(--md-inline-bg-dark);
+}
+[data-theme="dark"] .preview-content blockquote {
+  background: var(--md-quote-bg-dark);
+  border-left: 3px solid rgba(255,255,255,0.08);
+}
+/* Dark theme table header overrides */
+[data-theme="dark"] .preview-content th {
+  background: var(--md-th-bg-dark);
+  border: 1px solid rgba(255,255,255,0.12);
   color: var(--fg);
 }
-.preview-content a {
-  color: var(--accent);
+
+[data-theme="dark"] .preview-content td {
+  border: 1px solid rgba(255,255,255,0.06);
 }
+
+.md-image { max-width: 100%; height: auto; display: block; margin: 8px 0; }
 
 /* Lint panel */
 .lint-panel {
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 8px;
-  font-size: 12px;
+  padding: 12px;
+  /* bumped for readability */
+  font-size: 15px;
+  line-height: 1.5;
   background: transparent;
   color: var(--fg);
+  display: block;
 }
 .lint-panel .ln {
   font-weight: 600;
+  /* preview block contrast (light) */
+  --md-block-bg-light: rgba(0,0,0,0.04);
+  --md-block-border-light: rgba(0,0,0,0.10);
+  --md-inline-bg-light: rgba(0,0,0,0.03);
+  --md-quote-bg-light: rgba(0,0,0,0.02);
   margin-right: 8px;
 }
 .lint-panel .rule {
@@ -113,6 +281,24 @@ body {
 }
 .lint-ok {
   color: green;
+}
+
+.lint-loading,
+.lint-error {
+  /* preview block contrast (dark) */
+  --md-block-bg-dark: rgba(255,255,255,0.04);
+  --md-block-border-dark: rgba(255,255,255,0.12);
+  --md-inline-bg-dark: rgba(255,255,255,0.03);
+  --md-quote-bg-dark: rgba(255,255,255,0.02);
+  padding: 8px 0;
+  color: #666;
+}
+
+.lint-panel li {
+  margin: 6px 0;
+  padding: 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .theme-toggle {
