@@ -38,6 +38,8 @@ export default function App() {
 
   const [lintHeight, setLintHeight] = useState<number>(220);
   const draggingRef = useRef(false);
+    const [panelOpen, setPanelOpen] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
   const rafRef = useRef<number | null>(null);
@@ -56,7 +58,8 @@ export default function App() {
   }, []);
 
   const onMouseUp = useCallback(() => {
-    draggingRef.current = false;
+      // open combined panel instead
+      setPanelOpen(true);
     document.body.style.cursor = "";
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
@@ -145,6 +148,56 @@ export default function App() {
     };
   }, [markdown]);
 
+  const handleDownload = useCallback(() => {
+    try {
+      const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "marktype.md";
+      // append to body to make click work in all browsers
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // revoke after a short delay to ensure the download starts
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (err) {
+      // fallback: copy to clipboard? For now, silently ignore
+      console.error("Download failed", err);
+    }
+  }, [markdown]);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImportClick = useCallback(() => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  }, []);
+
+  const handleFileSelected = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (!f.name.toLowerCase().endsWith(".md")) {
+        alert("Please select a .md file");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result || "");
+        // confirm overwrite if editor has content
+        if (markdown && markdown.trim().length > 0) {
+          const ok = confirm("Importing will replace the current editor contents. Continue?");
+          if (!ok) return;
+        }
+        setMarkdown(text);
+      };
+      reader.readAsText(f, "utf-8");
+      // reset input so the same file can be selected again if needed
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [markdown]
+  );
+
   return (
     <div className={`app`} data-theme={theme}>
       <header className="app-header">
@@ -152,6 +205,14 @@ export default function App() {
           <div>MarkType — Live Markdown Editor</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => setPanelOpen(true)}
+            className="theme-toggle"
+            aria-label="Import or export"
+            title="Import or export markdown"
+          >
+            Import / Export
+          </button>
           <label style={{ fontSize: 12 }}>Editor font</label>
           <input
             type="range"
@@ -193,8 +254,88 @@ export default function App() {
           >
             {theme === "light" ? "🌞 Light" : "🌙 Dark"}
           </button>
+          {/* hidden file input used by panel import */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,text/markdown"
+            onChange={handleFileSelected}
+            style={{ display: "none" }}
+          />
         </div>
       </header>
+      {panelOpen && (
+        <div
+          className={`import-panel-overlay ${dragActive ? "drag-active" : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(false);
+            const f = e.dataTransfer?.files && e.dataTransfer.files[0];
+            if (!f) return;
+            if (!f.name.toLowerCase().endsWith(".md")) {
+              alert("Please drop a .md file");
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const text = String(reader.result || "");
+              if (markdown && markdown.trim().length > 0) {
+                const ok = confirm("Importing will replace the current editor contents. Continue?");
+                if (!ok) return;
+              }
+              setMarkdown(text);
+              setPanelOpen(false);
+            };
+            reader.readAsText(f, "utf-8");
+          }}
+        >
+          <div className="import-panel" role="dialog" aria-modal="true">
+            <h3>Import or export Markdown</h3>
+            <p style={{ marginTop: 6 }}>You can drag &amp; drop a <code>.md</code> file here to import it, or use the
+              buttons to import via file picker or export the current contents.</p>
+            <div className="import-actions">
+              <button
+                onClick={() => {
+                  if (fileInputRef.current) fileInputRef.current.click();
+                }}
+                className="theme-toggle"
+              >
+                Import .md
+              </button>
+              <button
+                onClick={() => {
+                  handleDownload();
+                  setPanelOpen(false);
+                }}
+                className="theme-toggle"
+              >
+                Export .md
+              </button>
+              <button
+                onClick={() => setPanelOpen(false)}
+                className="theme-toggle"
+                style={{ marginLeft: 8 }}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
+              Tip: importing replaces current editor content. You will be prompted to confirm.
+            </div>
+          </div>
+        </div>
+      )}
       <main className="main-with-console">
         <div className="split top-area">
           <section className="pane">

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 
@@ -47,8 +47,8 @@ export default function Preview({ markdown, fontSize }: PreviewProps) {
     return `<a href="${escAttr(h)}"${titleAttr}${target}>${text}</a>`;
   };
 
-  const html = marked.parse(markdown, { renderer });
-  const clean = DOMPurify.sanitize(html);
+  const html = useMemo(() => marked.parse(markdown, { renderer }), [markdown]);
+  const clean = useMemo(() => DOMPurify.sanitize(html), [html]);
 
   return (
     <div
