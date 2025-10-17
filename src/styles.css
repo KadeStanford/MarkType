@@ -332,10 +332,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 200;
 }
-.import-panel-overlay.drag-active { background: rgba(0,0,0,0.45); }
+.import-panel-overlay.drag-active {
+  background: rgba(0, 0, 0, 0.45);
+}
 .import-panel {
   background: var(--pane-bg);
   color: var(--fg);
@@ -343,16 +345,22 @@ body {
   border-radius: 10px;
   width: 520px;
   max-width: calc(100% - 40px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.32);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
 }
-.import-panel h3 { margin: 0 0 6px 0; }
-.import-actions { display:flex; gap:12px; margin-top:12px; }
+.import-panel h3 {
+  margin: 0 0 6px 0;
+}
+.import-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
 
 /* Import/Export panel overlay */
 .import-panel-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,8 +372,8 @@ body {
   padding: 18px;
   border-radius: 10px;
   min-width: 360px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 .import-panel.drag-active {
   outline: 3px dashed var(--accent);

@@ -14,7 +14,11 @@ or neutralizes active content so it cannot execute in the browser.
 The following image tag includes an `onerror` handler that would run JavaScript if executed:
 
 ```html
-<img src="invalid.png" onerror="alert('XSS via image onerror')" alt="broken image">
+<img
+  src="invalid.png"
+  onerror="alert('XSS via image onerror')"
+  alt="broken image"
+/>
 ```
 
 In MarkType this should render as a non-executable broken image; the `onerror` attribute will be
@@ -34,7 +38,7 @@ DOMPurify, so any active attributes will be removed before it is inserted into t
 
 ```html
 <script>
-  alert('This script tag will be removed by the sanitizer');
+  alert("This script tag will be removed by the sanitizer");
 </script>
 ```
 
@@ -76,7 +80,9 @@ neutralize it when the HTML is inserted into the document:
 <svg xmlns="http://www.w3.org/2000/svg">
   <foreignObject width="100" height="50">
     <body xmlns="http://www.w3.org/1999/xhtml">
-      <script>alert('XSS via SVG foreignObject')</script>
+      <script>
+        alert('XSS via SVG foreignObject')
+      </script>
     </body>
   </foreignObject>
 </svg>

@@ -38,8 +38,8 @@ export default function App() {
 
   const [lintHeight, setLintHeight] = useState<number>(220);
   const draggingRef = useRef(false);
-    const [panelOpen, setPanelOpen] = useState(false);
-    const [dragActive, setDragActive] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
   const rafRef = useRef<number | null>(null);
@@ -58,8 +58,8 @@ export default function App() {
   }, []);
 
   const onMouseUp = useCallback(() => {
-      // open combined panel instead
-      setPanelOpen(true);
+    // open combined panel instead
+    setPanelOpen(true);
     document.body.style.cursor = "";
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
@@ -150,7 +150,9 @@ export default function App() {
 
   const handleDownload = useCallback(() => {
     try {
-      const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+      const blob = new Blob([markdown], {
+        type: "text/markdown;charset=utf-8",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -186,7 +188,9 @@ export default function App() {
         const text = String(reader.result || "");
         // confirm overwrite if editor has content
         if (markdown && markdown.trim().length > 0) {
-          const ok = confirm("Importing will replace the current editor contents. Continue?");
+          const ok = confirm(
+            "Importing will replace the current editor contents. Continue?"
+          );
           if (!ok) return;
         }
         setMarkdown(text);
@@ -291,7 +295,9 @@ export default function App() {
             reader.onload = () => {
               const text = String(reader.result || "");
               if (markdown && markdown.trim().length > 0) {
-                const ok = confirm("Importing will replace the current editor contents. Continue?");
+                const ok = confirm(
+                  "Importing will replace the current editor contents. Continue?"
+                );
                 if (!ok) return;
               }
               setMarkdown(text);
@@ -302,8 +308,11 @@ export default function App() {
         >
           <div className="import-panel" role="dialog" aria-modal="true">
             <h3>Import or export Markdown</h3>
-            <p style={{ marginTop: 6 }}>You can drag &amp; drop a <code>.md</code> file here to import it, or use the
-              buttons to import via file picker or export the current contents.</p>
+            <p style={{ marginTop: 6 }}>
+              You can drag &amp; drop a <code>.md</code> file here to import it,
+              or use the buttons to import via file picker or export the current
+              contents.
+            </p>
             <div className="import-actions">
               <button
                 onClick={() => {
@@ -331,7 +340,8 @@ export default function App() {
               </button>
             </div>
             <div style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
-              Tip: importing replaces current editor content. You will be prompted to confirm.
+              Tip: importing replaces current editor content. You will be
+              prompted to confirm.
             </div>
           </div>
         </div>
