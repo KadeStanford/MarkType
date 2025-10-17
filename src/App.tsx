@@ -3,7 +3,7 @@ import Editor from "./components/EditorMonaco";
 import Preview from "./components/Preview";
 import LintPanel from "./components/LintPanel";
 
-  const DEFAULT_MARKDOWN = `# Welcome to MarkType
+const DEFAULT_MARKDOWN = `# Welcome to MarkType
 
 This is a simple real-time Markdown editor and previewer built with React + TypeScript.
 
@@ -58,10 +58,10 @@ export default function App() {
   const onMouseUp = useCallback(() => {
     draggingRef.current = false;
     document.body.style.cursor = "";
-  document.removeEventListener("mousemove", onMouseMove);
-  document.removeEventListener("mouseup", onMouseUp);
-  document.removeEventListener("pointermove", onMouseMove as EventListener);
-  document.removeEventListener("pointerup", onMouseUp as EventListener);
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    document.removeEventListener("pointermove", onMouseMove as EventListener);
+    document.removeEventListener("pointerup", onMouseUp as EventListener);
     // re-enable text selection
     document.body.style.userSelect = "";
     document.body.style.webkitUserSelect = "";
@@ -74,10 +74,10 @@ export default function App() {
   // Ensure listeners cleaned up on unmount
   useEffect(() => {
     return () => {
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-        document.removeEventListener("pointermove", onMouseMove as EventListener);
-        document.removeEventListener("pointerup", onMouseUp as EventListener);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("pointermove", onMouseMove as EventListener);
+      document.removeEventListener("pointerup", onMouseUp as EventListener);
       // cleanup rAF and selection style
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
@@ -148,10 +148,10 @@ export default function App() {
   return (
     <div className={`app`} data-theme={theme}>
       <header className="app-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div>MarkType — Live Markdown Editor</div>
         </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <label style={{ fontSize: 12 }}>Editor font</label>
           <input
             type="range"
@@ -167,7 +167,7 @@ export default function App() {
             }}
             aria-label="Editor font size"
           />
-          <div style={{ minWidth: 36, textAlign: 'right' }}>{editorFont}px</div>
+          <div style={{ minWidth: 36, textAlign: "right" }}>{editorFont}px</div>
           <label style={{ fontSize: 12 }}>Preview font</label>
           <input
             type="range"
@@ -183,7 +183,9 @@ export default function App() {
             }}
             aria-label="Preview font size"
           />
-          <div style={{ minWidth: 36, textAlign: 'right' }}>{previewFont}px</div>
+          <div style={{ minWidth: 36, textAlign: "right" }}>
+            {previewFont}px
+          </div>
           <button
             className="theme-toggle"
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
@@ -196,18 +198,34 @@ export default function App() {
       <main className="main-with-console">
         <div className="split top-area">
           <section className="pane">
-            <Editor value={markdown} onChange={setMarkdown} theme={theme} fontSize={editorFont} />
+            <Editor
+              value={markdown}
+              onChange={setMarkdown}
+              theme={theme}
+              fontSize={editorFont}
+            />
           </section>
           <section className="pane">
             <Preview markdown={markdown} fontSize={previewFont} />
           </section>
         </div>
 
-        <div className="resizer" onMouseDown={handleStartDrag} onPointerDown={handleStartDrag} title="Drag to resize lint console" role="separator" aria-orientation="horizontal" aria-label="Resize lint console">
+        <div
+          className="resizer"
+          onMouseDown={handleStartDrag}
+          onPointerDown={handleStartDrag}
+          title="Drag to resize lint console"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize lint console"
+        >
           <div className="resizer-handle" aria-hidden="true" />
         </div>
 
-        <div className="bottom-lint" style={{ height: Math.max(lintHeight, 120), minHeight: 120 }}>
+        <div
+          className="bottom-lint"
+          style={{ height: Math.max(lintHeight, 120), minHeight: 120 }}
+        >
           <LintPanel text={markdown} />
         </div>
       </main>

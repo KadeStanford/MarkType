@@ -9,7 +9,9 @@ type Issue = {
 
 export default function LintPanel({ text }: { text: string }) {
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle"
+  );
 
   // Simple browser fallback linter for demo purposes.
   function fallbackLint(src: string): Issue[] {
@@ -157,7 +159,9 @@ export default function LintPanel({ text }: { text: string }) {
       <strong>Markdown Lint</strong>
       {status === "loading" && <div className="lint-loading">Checking...</div>}
       {status === "error" && (
-        <div className="lint-error">Linting unavailable (markdownlint could not be loaded)</div>
+        <div className="lint-error">
+          Linting unavailable (markdownlint could not be loaded)
+        </div>
       )}
       {status === "ready" && (
         <>
@@ -170,7 +174,8 @@ export default function LintPanel({ text }: { text: string }) {
                   <span className="ln">Ln {it.lineNumber}</span>
                   <span className="rule">{it.ruleNames.join(", ")}</span>
                   <div className="desc">
-                    {it.ruleDescription} {it.errorDetail ? `— ${it.errorDetail}` : ""}
+                    {it.ruleDescription}{" "}
+                    {it.errorDetail ? `— ${it.errorDetail}` : ""}
                   </div>
                 </li>
               ))}
