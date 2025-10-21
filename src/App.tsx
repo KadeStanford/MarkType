@@ -58,8 +58,6 @@ export default function App() {
   }, []);
 
   const onMouseUp = useCallback(() => {
-    // open combined panel instead
-    setPanelOpen(true);
     document.body.style.cursor = "";
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
