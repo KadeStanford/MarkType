@@ -1,8 +1,11 @@
 name: Release
+permissions:
+  contents: write
 "on":
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   build-windows:

@@ -10,7 +10,7 @@
     "web:dev": "vite",
     "electron:dev": "cross-env ELECTRON_DEV=1 concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build:web": "vite build",
-    "electron:build": "npm run build:web && electron-builder",
+  "electron:build": "npm run build:web && electron-builder -p never",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
