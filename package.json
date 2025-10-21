@@ -1,6 +1,6 @@
 {
   "name": "marktype",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "A small Markdown editor (MarkType) packaged with Electron",
   "author": "Kade Stanford",
@@ -10,7 +10,7 @@
     "web:dev": "vite",
     "electron:dev": "cross-env ELECTRON_DEV=1 concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build:web": "vite build",
-  "electron:build": "npm run build:web && electron-builder -p never",
+    "electron:build": "npm run build:web && electron-builder -p never",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
