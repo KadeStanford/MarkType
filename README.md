@@ -99,19 +99,6 @@ The current UI uses browser import/export by default. You can enhance it to pref
 
 ---
 
-## Optional: Generate docs/presentations
-
-There are scripts to generate a Word user manual and a PowerPoint deck:
-
-```powershell
-npm run manual:docx
-npm run slides:pptx
-```
-
-Generated `.docx`/`.pptx` files are ignored by `.gitignore`.
-
----
-
 ## Troubleshooting
 
 - Packaging symlink error on Windows (7-Zip):
@@ -126,3 +113,4 @@ Generated `.docx`/`.pptx` files are ignored by `.gitignore`.
 - Prefer native Open/Save dialogs and filesystem in Electron by default (with browser fallback)
 - Export to HTML/PDF
 - Optional plugins (mermaid, KaTeX) via lazy loading
+
