@@ -115,8 +115,8 @@ Generated `.docx`/`.pptx` files are ignored by `.gitignore`.
 ## Troubleshooting
 
 - Packaging symlink error on Windows (7-Zip):
-	- Enable Windows Developer Mode (Settings → For developers) or run the build in an elevated PowerShell.
-	- Then clear the cache and retry packaging: `Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign"`.
+  - Enable Windows Developer Mode (Settings → For developers) or run the build in an elevated PowerShell.
+  - Then clear the cache and retry packaging: `Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign"`.
 - Vite "module externalized for browser compatibility" warnings for Node core modules used by `markdownlint` are expected in web builds; the app uses a fallback linter in the browser if `markdownlint` isn't loadable.
 
 ---
