@@ -24,6 +24,7 @@
     "katex": "^0.16.25",
     "markdownlint": "^0.28.1",
     "marked": "^5.1.1",
+    "mermaid": "^11.12.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },

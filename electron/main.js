@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
 const path = require("path");
 
 const isDev =
@@ -13,6 +13,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
+    // hide the menu bar by default (Windows/Linux)
+    autoHideMenuBar: true,
+    menuBarVisible: false,
   });
 
   if (isDev) {
@@ -25,6 +28,12 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  // Remove the default application menu (hides File/Edit/View/Help)
+  try {
+    Menu.setApplicationMenu(null);
+  } catch (e) {
+    // ignore if Menu is not available for some platforms
+  }
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -5,6 +5,8 @@
   --editor-bg: #ffffff;
   --editor-fg: #111;
   --preview-bg: #fff;
+  --scroll-thumb: rgba(0, 0, 0, 0.12);
+  --scroll-track: rgba(0, 0, 0, 0.04);
   --accent: #2563eb;
   --toggle-border: rgba(0, 0, 0, 0.08);
   --resizer-handle-bg-light: linear-gradient(
@@ -16,13 +18,19 @@
   --md-th-bg-light: rgba(0, 0, 0, 0.03);
 }
 
-[data-theme="dark"] {
+/* dark theme variables: apply when data-theme or .theme-dark class present on common roots */
+:root[data-theme="dark"],
+body[data-theme="dark"],
+.app[data-theme="dark"],
+.theme-dark {
   --bg: #0b0f14;
   --fg: #e6eef6;
   --pane-bg: #071016;
   --editor-bg: #04121a;
   --editor-fg: #d7e6f3;
   --preview-bg: #04121a;
+  --scroll-thumb: rgba(255, 255, 255, 0.12);
+  --scroll-track: rgba(255, 255, 255, 0.04);
   --accent: #60a5fa;
   --toggle-border: rgba(255, 255, 255, 0.12);
   --resizer-handle-bg-dark: linear-gradient(
@@ -31,10 +39,110 @@
     rgba(255, 255, 255, 0.12)
   );
   --resizer-handle-border-dark: rgba(255, 255, 255, 0.18);
-  /* make th/bg lighter than page bg in dark mode for contrast */
   --md-th-bg-dark: rgba(255, 255, 255, 0.06);
   --md-block-bg-dark: rgba(255, 255, 255, 0.07);
   --md-inline-bg-dark: rgba(255, 255, 255, 0.04);
+}
+
+.mermaid-full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--preview-bg);
+  padding: 12px;
+  position: relative; /* keep toolbar positioned relative to preview */
+}
+
+/* The scroller holds the large scaled inner content; toolbar sits outside the scroller
+   so it remains visible while the user scrolls or pans the diagram. */
+.mermaid-full-scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto; /* allow scrolling when diagram is tall/wide */
+}
+.mermaid-full-scroller.panning {
+  cursor: grabbing;
+}
+.mermaid-full-scroller {
+  cursor: grab;
+}
+
+.mermaid-full-toolbar {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.preview-content,
+.mermaid-full-scroller {
+  /* prefer thin scrollbars that match app colors */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track); /* Firefox */
+}
+
+/* WebKit-based browsers */
+.preview-content::-webkit-scrollbar,
+.mermaid-full-scroller::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.preview-content::-webkit-scrollbar-track,
+.mermaid-full-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+.preview-content::-webkit-scrollbar-thumb,
+.mermaid-full-scroller::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 8px;
+  border: 3px solid transparent; /* gives padding around thumb */
+  background-clip: padding-box;
+}
+
+/* make SVG text in Mermaid diagrams follow app foreground color (improves visibility in dark mode) */
+.mermaid-full-inner svg text,
+.mermaid-panel svg text,
+.mermaid-full-inner svg tspan,
+.mermaid-panel svg tspan {
+  fill: var(--fg) !important;
+  color: var(--fg) !important;
+}
+
+/* Also ensure links inside mermaid (if any) show appropriately */
+.mermaid-full-inner svg a text,
+.mermaid-panel svg a text {
+  fill: var(--accent) !important;
+}
+.mermaid-zoom-controls button {
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.mermaid-zoom-controls button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.mermaid-zoom-label {
+  font-size: 12px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
 }
 
 * {
@@ -67,11 +175,71 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+.app-header .app-logo {
+  height: 44px;
+  display: block;
+}
+/* Title text next to app logo */
+.app-header .app-title {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--fg);
+  display: inline-block;
+}
 .split {
   display: flex;
   flex: 1;
-  gap: 12px;
+  gap: 8px; /* narrower center gap */
   padding: 12px;
+}
+/* Vertical splitter between editor and preview */
+.v-splitter {
+  width: 20px; /* slightly larger hit area for reliable dragging */
+  cursor: col-resize;
+  background: transparent;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80; /* above panes */
+  position: relative;
+  height: 100%;
+  touch-action: none; /* prevent touch scroll while dragging */
+}
+.v-splitter::after {
+  content: "";
+  width: 4px;
+  height: 40px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.08);
+}
+.v-splitter::before {
+  /* invisible but wider hit area so users can easily grab the splitter */
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  width: 40px; /* larger interactive area */
+  pointer-events: auto;
+}
+.v-splitter:focus {
+  outline: none;
+}
+.v-splitter:focus-visible::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 12px;
+  bottom: 12px;
+  width: 6px;
+  border-radius: 6px;
+  background: rgba(37, 99, 235, 0.18);
+}
+.v-splitter:active::after {
+  background: rgba(37, 99, 235, 0.18);
 }
 .pane {
   flex: 1;
@@ -81,6 +249,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative; /* allow absolute children like sticky action buttons */
 }
 
 .main-with-console {
@@ -144,8 +313,8 @@ body {
 .bottom-lint {
   background: var(--pane-bg);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
-  /* ensure the panel doesn't collapse too small */
-  min-height: 120px;
+  /* allow full collapse when height is set to 0 */
+  min-height: 0;
   max-height: 60vh;
   overflow: auto;
 }
@@ -155,6 +324,183 @@ body {
   height: 100%;
   background: var(--editor-bg);
   color: var(--editor-fg);
+}
+
+/* Tabs above editor */
+.tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--pane-bg);
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+/* Style the horizontal scrollbar under the tabs to match the app's look */
+.tabs {
+  /* prefer thin scrollbars that match app colors */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--scroll-thumb) transparent; /* Firefox */
+}
+.tabs::-webkit-scrollbar {
+  height: 8px;
+}
+.tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tabs::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent; /* padding around thumb */
+  background-clip: padding-box;
+}
+.tabs::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(37, 99, 235, 0.18);
+}
+/* Right-side controls in the tabbar that should not scroll with the .tabs area */
+.tabbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tabbar-right .tab-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.theme-toggle.small {
+  padding: 4px 8px;
+  height: 28px;
+  min-width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.tab {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--toggle-border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.tab-rename {
+  width: 160px;
+  max-width: 220px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: var(--pane-bg);
+  color: var(--fg);
+  font-size: 12px;
+}
+.tab-label {
+  display: inline-block;
+  margin-right: 8px;
+}
+.tab-close {
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.tab-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Confirmation modal for tab close */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 300;
+}
+.confirm-box {
+  background: var(--pane-bg);
+  color: var(--fg);
+  padding: 18px;
+  border-radius: 10px;
+  width: 420px;
+  max-width: calc(100% - 40px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tab.active {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: var(--accent);
+}
+.tab-actions {
+  display: flex;
+  gap: 6px;
+}
+.tab-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.tab-add:hover {
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.math-palette {
+  padding: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--pane-bg);
+}
+.palette-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.palette-title {
+  font-size: 12px;
+  opacity: 0.8;
+  min-width: 52px;
+}
+.palette-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.palette-btn {
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.palette-btn:hover {
+  border-color: var(--accent);
 }
 
 .preview {
@@ -168,6 +514,11 @@ body {
   min-height: 0; /* allow this pane to shrink inside the split */
 }
 
+/* make preview a positioned container so mermaid overlays can be absolute */
+.preview {
+  position: relative;
+}
+
 .preview-content {
   color: var(--fg);
   flex: 1 1 0%;
@@ -178,6 +529,9 @@ body {
 .preview-content h2,
 .preview-content h3 {
   color: var(--fg);
+}
+.preview-content [data-source-line] {
+  cursor: pointer;
 }
 .preview-content h3 {
   font-size: 1.25rem;
@@ -206,6 +560,143 @@ body {
   font-size: 0.95rem;
 }
 
+/* Mermaid grid and panels */
+.mermaid-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* allow clicks to pass through unless a panel has interactive elements */
+}
+.mermaid-panel {
+  pointer-events: auto; /* panels receive pointer events */
+}
+
+/* Fullscreen mermaid view (for .mmd / raw mermaid files) */
+.mermaid-full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* allow scrolling when diagram is tall/wide */
+  display: block;
+  background: var(--preview-bg);
+  padding: 12px;
+}
+
+.mermaid-full-toolbar {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mermaid-zoom-controls button {
+  border: 1px solid var(--toggle-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--fg);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mermaid-zoom-controls button:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+.mermaid-zoom-label {
+  font-size: 12px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+}
+.mermaid-full-scroller {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.mermaid-full-inner {
+  /* This container will be scaled; size to content so flex centering works */
+  display: inline-block;
+  transform-origin: center center;
+}
+.mermaid-panel {
+  position: absolute;
+  background: var(--pane-bg);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.mermaid-header {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 6px 8px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+}
+.mermaid-title {
+  font-size: 13px;
+  opacity: 0.9;
+}
+.mermaid-content {
+  flex: 1 1 0%;
+  overflow: auto;
+  padding: 8px;
+  background: var(--preview-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Center and constrain mermaid SVGs so small diagrams are centered
+   and large diagrams can still scroll within the panel */
+.mermaid-content > svg,
+.mermaid-full-inner > svg {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  display: block;
+}
+.mermaid-resizer {
+  width: 12px;
+  height: 12px;
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  cursor: nwse-resize;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+}
+.mermaid-error,
+.mermaid-fallback {
+  white-space: pre-wrap;
+  color: var(--fg);
+  font-size: 13px;
+}
+
+/* Keep fallback/pre content pinned to top-left instead of centering */
+.mermaid-content > .mermaid-fallback,
+.mermaid-content > .mermaid-error {
+  align-self: flex-start;
+}
+
+.mermaid-debug {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--fg);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 40;
+}
+
 /* Table styling */
 .preview-content table {
   width: 100%;
@@ -227,6 +718,25 @@ body {
 }
 .preview-content td {
   white-space: normal;
+}
+
+/* small chip to show font size next to sliders */
+.font-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  background: var(--md-inline-bg-light);
+  color: var(--fg);
+  border: 1px solid var(--toggle-border);
+  font-size: 13px;
+}
+
+[data-theme="dark"] .font-chip {
+  background: var(--md-inline-bg-dark);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Blockquote */
@@ -325,6 +835,45 @@ body {
   cursor: pointer;
 }
 
+/* Sticky Push button shown inside editor pane when editing a GitHub-backed file */
+.git-push-sticky {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 120;
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.git-push-sticky:active {
+  transform: translateY(1px);
+}
+.git-push-sticky .push-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.git-push-sticky svg {
+  fill: currentColor;
+}
+
+/* temporary highlight applied when jumping from preview -> editor */
+.mt-editor-line-highlight {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border-left: 4px solid rgba(59, 130, 246, 0.9) !important;
+}
+
 /* Import/Export panel overlay */
 .import-panel-overlay {
   position: fixed;
@@ -378,4 +927,395 @@ body {
 .import-panel.drag-active {
   outline: 3px dashed var(--accent);
   outline-offset: 6px;
+}
+
+/* KaTeX context menu */
+.ctx-menu {
+  background: var(--pane-bg);
+  color: var(--fg);
+  width: 320px;
+  max-height: 70vh;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 6px 6px 8px 6px;
+}
+.ctx-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px 4px 6px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+}
+/* style the tabs scrollbar inside the context menu */
+.ctx-tabs {
+  /* prefer thin scrollbars that match app colors */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--scroll-thumb) transparent; /* Firefox */
+}
+.ctx-tabs::-webkit-scrollbar {
+  height: 8px;
+}
+.ctx-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ctx-tabs::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.ctx-tabs::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(37, 99, 235, 0.18);
+}
+.ctx-tab {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--toggle-border);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ctx-tab.active {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: var(--accent);
+}
+.ctx-fav-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 16px;
+}
+.ctx-list {
+  padding: 6px 4px 0 4px;
+  max-height: 48vh;
+  overflow: auto;
+}
+.ctx-search {
+  flex: 1 1 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+}
+/* wrap the search so we can show a clear (×) button on the right */
+.ctx-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ctx-search-clear {
+  position: absolute;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.ctx-search-clear:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 6px 8px;
+}
+.ctx-item-main {
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  text-align: left;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: 1 1 auto;
+  padding: 0;
+  cursor: pointer;
+}
+.ctx-star {
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.ctx-star.fav {
+  color: gold;
+}
+
+/* Scrollbar styling for KaTeX context menu list */
+.ctx-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.ctx-list::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.ctx-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ctx-list::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.ctx-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(37, 99, 235, 0.18);
+}
+
+/* Ensure main label can shrink and not push the star off-screen */
+.ctx-item {
+  min-width: 0;
+}
+.ctx-item .ctx-sym {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.ctx-item-main {
+  min-width: 0;
+}
+
+/* Keep ctx-menu from being too narrow and make room for the star */
+.ctx-menu {
+  min-width: 300px;
+  max-width: 640px;
+}
+.ctx-list {
+  padding-right: 8px;
+}
+
+/* Layout for list item additions */
+.ctx-main-left {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.ctx-meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 12px;
+}
+.ctx-title {
+  opacity: 0.9;
+  color: var(--fg);
+}
+.ctx-badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  white-space: nowrap;
+}
+
+/* small actions area to hold star/delete buttons */
+.ctx-item-actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.ctx-add-btn {
+  background: transparent;
+  border: 1px solid var(--toggle-border);
+  color: var(--fg);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ctx-add-btn:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: var(--accent);
+}
+.ctx-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ctx-form-input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+}
+.ctx-form-input[type="textarea"],
+.ctx-form-input textarea {
+  min-height: 64px;
+}
+
+/* small svg icons used inside buttons */
+.ctx-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.ctx-search-clear .ctx-icon {
+  width: 14px;
+  height: 14px;
+}
+.ctx-star .ctx-icon {
+  width: 16px;
+  height: 16px;
+}
+.ctx-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+.ctx-star.fav {
+  color: gold;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ctx-meta {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .ctx-badge {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+  }
+}
+.ctx-section {
+  font-size: 11px;
+  opacity: 0.8;
+  padding: 6px 8px 4px 8px;
+}
+.ctx-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ctx-item:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+.ctx-sep {
+  height: 1px;
+  margin: 6px 0;
+  background: rgba(0, 0, 0, 0.08);
+}
+.ctx-sym {
+  font-weight: 600;
+}
+.ctx-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Toast notifications */
+.toast-container {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  min-width: 220px;
+  max-width: 420px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 12px 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  transform: translateY(8px) scale(0.99);
+  opacity: 0;
+  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    opacity 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+.toast.show {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.toast.hide {
+  transform: translateY(6px) scale(0.98);
+  opacity: 0;
+}
+.toast.info {
+  background: rgba(0, 0, 0, 0.8);
+}
+.toast.success {
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.95),
+    rgba(59, 130, 246, 0.95)
+  );
+}
+.toast.error {
+  background: linear-gradient(
+    90deg,
+    rgba(220, 38, 38, 0.95),
+    rgba(185, 28, 28, 0.95)
+  );
+}
+.toast .toast-msg {
+  flex: 1;
+}
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  line-height: 1;
+  padding: 6px;
+  margin-left: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  opacity: 0.9;
+}
+.toast-close:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
