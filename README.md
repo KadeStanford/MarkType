@@ -48,12 +48,3 @@ npm run build:web
 # package Electron app (NSIS installer)
 npm run electron:build
 ```
-
-Outputs:
-
-- dist/MarkType Setup <version>.exe
-- dist/win-unpacked/MarkType.exe
-
-Icons:
-
-- Place app icons in assets/ (see assets/README.md) to replace the default Electron icon.
