@@ -12,6 +12,8 @@ import AssetsPanel from "./components/AssetsPanel";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { renderMath } from "./utils/renderMath";
+import Toolbar from "./components/Toolbar";
+import { applyMarkdownFormat } from "./utils/markdownFormatUtil";
 
 const DEFAULT_MARKDOWN = `# Welcome to MarkType
 
@@ -43,6 +45,7 @@ export default function App() {
   const splitRef = useRef<HTMLDivElement | null>(null);
   const startSplitX = useRef(0);
   const startLeftPct = useRef(50);
+  const editorInstanceRef = useRef<any>(null);
   const [leftPct, setLeftPct] = useState<number>(() => {
     try {
       const s = localStorage.getItem("marktype:leftPct");
@@ -560,6 +563,23 @@ export default function App() {
       }
     };
   }, [docs, activeId]);
+
+  const handleEditorMount = useCallback((editor: any, monaco: any) => {
+    editorInstanceRef.current = editor;
+    console.log("Editor mounted successfully!", editor);
+  }, []);
+
+  const handleFormatClick = useCallback((formatType: string) => {
+    const editor = editorInstanceRef.current;
+
+    if (!editor) {
+      console.warn("Editor not ready yet");
+      return;
+    }
+
+    console.log(`Applying ${formatType} format`);
+    applyMarkdownFormat(editor, formatType);
+  }, []);
 
   const handleDownload = useCallback(
     (forceMmd?: boolean) => {
@@ -1417,6 +1437,7 @@ export default function App() {
                 </div>
               </div>
             </div>
+            <Toolbar onFormatClick={handleFormatClick} theme={theme} />
             <Editor
               value={markdown}
               onChange={setMarkdown}
@@ -1437,6 +1458,7 @@ export default function App() {
               onRegisterCommands={(cmds) => {
                 commandsRef.current = cmds || {};
               }}
+              onMount={handleEditorMount}
             />
             {activeDoc?.git && (
               <button

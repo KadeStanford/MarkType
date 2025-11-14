@@ -13,6 +13,7 @@ type Props = {
   onScroll?: (ratio: number) => void; // 0..1 scroll position
   onVisibleLine?: (line: number) => void;
   onRegisterCommands?: (cmds: { undo: () => void; redo: () => void }) => void;
+  onMount?: (editor: any, monaco: any) => void;
 };
 
 export default function EditorMonaco({
@@ -27,6 +28,7 @@ export default function EditorMonaco({
   onScroll,
   onVisibleLine,
   onRegisterCommands,
+  onMount,
 }: Props) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -317,6 +319,9 @@ export default function EditorMonaco({
         } catch (_) {}
       }
     } catch (_) {}
+    if (onMount) {
+          onMount(editor, monaco);
+    }
   };
 
   // react to modelId changes (switch models without losing undo history)
