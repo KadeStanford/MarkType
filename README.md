@@ -13,11 +13,34 @@ Desktop-first Markdown editor built with Electron, Vite, and React. Edit in Mona
 - Lint panel: markdownlint when available, with a lightweight browser fallback
 - Theme + typography: light/dark toggle, per-pane font-size sliders
 - Import/Export panel:
-  - Export current editor content to .md
-  - Import .md via file picker or drag-and-drop
-- Persistence: auto-save/restore editor content
-- UI polish: improved dark-mode contrast for blocks/tables; larger lint-panel font
-- Demo docs: docs/examples (Showcase, DOMPurify demo, etc.)
+- Import/Export panel:
+- Export current editor content to `.md`, `.mmd`, `.html`, or `.pdf` (choose format from the panel)
+- Import `.md`/`.mmd` via file picker or drag-and-drop
+
+- GitHub integration / Git Sync:
+
+  - Connect a Personal Access Token to browse your repos, open markdown files directly from a repo, and save changes back (commit) to GitHub.
+  - Branch selection and file tree browsing supported.
+
+- Assets & image workflow:
+
+  - Upload images directly to the repository `assets/` folder when editing a Git-backed file.
+  - Browse repo `assets/` via the Assets panel and insert or delete images.
+  - Drag & drop images into the editor to upload or insert as data URLs when not connected to GitHub.
+
+- Math & KaTeX:
+
+  - KaTeX context menu for quick insertion of common math snippets and templates.
+  - KaTeX linting detects unclosed delimiters and common mistakes.
+
+- Mermaid support:
+
+  - Render fenced-code-block or raw Mermaid diagrams in the preview.
+  - Mermaid linting to catch syntax issues.
+
+- Export & UI tweaks:
+  - Single export control in the Import/Export panel with responsive styling and explicit `.mmd` option for Mermaid files.
+  - PDF export uses `html2pdf.js` to create downloadable PDFs programmatically.
 
 ## Getting started (desktop dev)
 
