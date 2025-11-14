@@ -561,70 +561,77 @@ export default function App() {
     };
   }, [docs, activeId]);
 
-  const handleDownload = useCallback((forceMmd?: boolean) => {
-    try {
-      // choose extension based on content heuristics (mermaid files -> .mmd)
-      const isMermaid = (s: string) => {
-        const t = (s || "").trim();
-        if (!t) return false;
-        const first = t.split(/\r?\n/)[0].trim();
-        const simpleHeaderMatch =
-          /^(?:graph|flowchart|sequenceDiagram|gantt|classDiagram|stateDiagram|pie|erDiagram|journey|gitGraph)/i.test(
-            first
-          );
-        const fencedOnly =
-          /^\s*(?:```|~~~)\s*mermaid[\s\S]*?(?:```|~~~)\s*$/i.test(t);
-        return simpleHeaderMatch || fencedOnly;
-      };
-      const preferMmd = forceMmd === true ? true : isMermaid(markdown);
-      let name = activeDoc?.name || "untitled";
-      const lower = name.toLowerCase();
-      if (preferMmd) {
-        if (!lower.endsWith(".mmd")) {
-          name = name.replace(/\.md$/i, "") + ".mmd";
-          // update tab name to reflect mmd
-          if (activeDoc)
-            setDocs((arr) =>
-              arr.map((d) => (d.id === activeDoc.id ? { ...d, name } : d))
+  const handleDownload = useCallback(
+    (forceMmd?: boolean) => {
+      try {
+        // choose extension based on content heuristics (mermaid files -> .mmd)
+        const isMermaid = (s: string) => {
+          const t = (s || "").trim();
+          if (!t) return false;
+          const first = t.split(/\r?\n/)[0].trim();
+          const simpleHeaderMatch =
+            /^(?:graph|flowchart|sequenceDiagram|gantt|classDiagram|stateDiagram|pie|erDiagram|journey|gitGraph)/i.test(
+              first
             );
+          const fencedOnly =
+            /^\s*(?:```|~~~)\s*mermaid[\s\S]*?(?:```|~~~)\s*$/i.test(t);
+          return simpleHeaderMatch || fencedOnly;
+        };
+        const preferMmd = forceMmd === true ? true : isMermaid(markdown);
+        let name = activeDoc?.name || "untitled";
+        const lower = name.toLowerCase();
+        if (preferMmd) {
+          if (!lower.endsWith(".mmd")) {
+            name = name.replace(/\.md$/i, "") + ".mmd";
+            // update tab name to reflect mmd
+            if (activeDoc)
+              setDocs((arr) =>
+                arr.map((d) => (d.id === activeDoc.id ? { ...d, name } : d))
+              );
+          }
+        } else {
+          if (!lower.endsWith(".md")) {
+            name = name.replace(/\.mmd$/i, "") + ".md";
+            if (activeDoc)
+              setDocs((arr) =>
+                arr.map((d) => (d.id === activeDoc.id ? { ...d, name } : d))
+              );
+          }
         }
-      } else {
-        if (!lower.endsWith(".md")) {
-          name = name.replace(/\.mmd$/i, "") + ".md";
-          if (activeDoc)
-            setDocs((arr) =>
-              arr.map((d) => (d.id === activeDoc.id ? { ...d, name } : d))
-            );
-        }
-      }
 
-      const mime = preferMmd
-        ? "text/plain;charset=utf-8"
-        : "text/markdown;charset=utf-8";
-      const blob = new Blob([markdown], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    } catch (err) {
-      console.error("Download failed", err);
-    }
-  }, [markdown, activeDoc]);
+        const mime = preferMmd
+          ? "text/plain;charset=utf-8"
+          : "text/markdown;charset=utf-8";
+        const blob = new Blob([markdown], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      } catch (err) {
+        console.error("Download failed", err);
+      }
+    },
+    [markdown, activeDoc]
+  );
 
   const buildExportHtml = useCallback((title: string, md: string) => {
     try {
-      const safeTitle = String(title || "untitled").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const safeTitle = String(title || "untitled")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
       const rendered = marked.parse(renderMath(md || ""));
       const body = DOMPurify.sanitize(rendered);
       const css = `body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;padding:20px;max-width:900px;margin:0 auto;color:#111} img.md-image{max-width:100%;height:auto} pre{background:#f6f8fa;padding:12px;border-radius:6px;overflow:auto} code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,'Roboto Mono',Courier New,monospace}`;
       const head = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"><style>${css}</style></head>`;
       return head + `<body>${body}</body></html>`;
     } catch (err) {
-      return `<!doctype html><html><head><meta charset="utf-8"><title>Export</title></head><body><pre>${String(err)}</pre></body></html>`;
+      return `<!doctype html><html><head><meta charset="utf-8"><title>Export</title></head><body><pre>${String(
+        err
+      )}</pre></body></html>`;
     }
   }, []);
 
@@ -653,8 +660,11 @@ export default function App() {
         const name = (activeDoc?.name || "untitled").replace(/\.md$/i, "");
         const html = buildExportHtml(name, markdown);
         // dynamically import html2pdf so it's only loaded when needed
-        const html2pdfModule = await import(/* webpackChunkName: "html2pdf" */ "html2pdf.js");
-        const html2pdf = (html2pdfModule as any).default || (html2pdfModule as any);
+        const html2pdfModule = await import(
+          /* webpackChunkName: "html2pdf" */ "html2pdf.js"
+        );
+        const html2pdf =
+          (html2pdfModule as any).default || (html2pdfModule as any);
         // create a hidden iframe to isolate exported document (prevents style leakage and layout shifts)
         const iframe = document.createElement("iframe");
         iframe.style.position = "fixed";
@@ -665,7 +675,9 @@ export default function App() {
         iframe.style.border = "0";
         iframe.style.visibility = "hidden";
         document.body.appendChild(iframe);
-        const idoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+        const idoc =
+          iframe.contentDocument ||
+          (iframe.contentWindow && iframe.contentWindow.document);
         if (!idoc) throw new Error("Unable to access iframe document");
         idoc.open();
         idoc.write(html);
