@@ -903,6 +903,69 @@ body {
   display: flex;
   gap: 12px;
   margin-top: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Export control inside import panel */
+.export-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0; /* allow child to shrink */
+}
+.export-select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  height: 36px;
+  min-width: 120px;
+  max-width: 260px;
+  width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure select dropdown and options match app theme (fix white-on-white) */
+.import-panel .export-select,
+.import-panel .export-select option {
+  background: var(--pane-bg) !important;
+  color: var(--fg) !important;
+}
+
+/* Some browsers use a native dropdown that may ignore option styling; at least ensure the select itself has readable text and background */
+.import-panel .export-select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.export-button {
+  padding: 8px 12px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* When the panel is narrow, allow export control to take full width and stack */
+@media (max-width: 520px) {
+  .export-control {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .export-select {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+  }
+  .export-button {
+    flex: 0 0 auto;
+  }
 }
 
 /* Import/Export panel overlay */

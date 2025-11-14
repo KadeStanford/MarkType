@@ -9,6 +9,9 @@ import logo from "./logoFinal.png";
 import GitSyncPanel from "./components/GitSyncPanel";
 import Toasts from "./components/Toast";
 import AssetsPanel from "./components/AssetsPanel";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
+import { renderMath } from "./utils/renderMath";
 
 const DEFAULT_MARKDOWN = `# Welcome to MarkType
 
@@ -558,7 +561,7 @@ export default function App() {
     };
   }, [docs, activeId]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback((forceMmd?: boolean) => {
     try {
       // choose extension based on content heuristics (mermaid files -> .mmd)
       const isMermaid = (s: string) => {
@@ -573,8 +576,7 @@ export default function App() {
           /^\s*(?:```|~~~)\s*mermaid[\s\S]*?(?:```|~~~)\s*$/i.test(t);
         return simpleHeaderMatch || fencedOnly;
       };
-
-      const preferMmd = isMermaid(markdown);
+      const preferMmd = forceMmd === true ? true : isMermaid(markdown);
       let name = activeDoc?.name || "untitled";
       const lower = name.toLowerCase();
       if (preferMmd) {
@@ -612,6 +614,102 @@ export default function App() {
       console.error("Download failed", err);
     }
   }, [markdown, activeDoc]);
+
+  const buildExportHtml = useCallback((title: string, md: string) => {
+    try {
+      const safeTitle = String(title || "untitled").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const rendered = marked.parse(renderMath(md || ""));
+      const body = DOMPurify.sanitize(rendered);
+      const css = `body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;padding:20px;max-width:900px;margin:0 auto;color:#111} img.md-image{max-width:100%;height:auto} pre{background:#f6f8fa;padding:12px;border-radius:6px;overflow:auto} code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,'Roboto Mono',Courier New,monospace}`;
+      const head = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"><style>${css}</style></head>`;
+      return head + `<body>${body}</body></html>`;
+    } catch (err) {
+      return `<!doctype html><html><head><meta charset="utf-8"><title>Export</title></head><body><pre>${String(err)}</pre></body></html>`;
+    }
+  }, []);
+
+  const handleExportHtml = useCallback(() => {
+    try {
+      const name = (activeDoc?.name || "untitled").replace(/\.md$/i, "");
+      const html = buildExportHtml(name, markdown);
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (err) {
+      console.error("Export HTML failed", err);
+      (window as any).__mt_toast?.("Export HTML failed", "error");
+    }
+  }, [activeDoc, markdown, buildExportHtml]);
+
+  const handleExportPdf = useCallback(() => {
+    (async () => {
+      try {
+        const name = (activeDoc?.name || "untitled").replace(/\.md$/i, "");
+        const html = buildExportHtml(name, markdown);
+        // dynamically import html2pdf so it's only loaded when needed
+        const html2pdfModule = await import(/* webpackChunkName: "html2pdf" */ "html2pdf.js");
+        const html2pdf = (html2pdfModule as any).default || (html2pdfModule as any);
+        // create a hidden iframe to isolate exported document (prevents style leakage and layout shifts)
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.left = "-9999px";
+        iframe.style.top = "0";
+        iframe.style.width = "800px";
+        iframe.style.height = "1000px";
+        iframe.style.border = "0";
+        iframe.style.visibility = "hidden";
+        document.body.appendChild(iframe);
+        const idoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+        if (!idoc) throw new Error("Unable to access iframe document");
+        idoc.open();
+        idoc.write(html);
+        idoc.close();
+        // wait for iframe to load resources (stylesheets, images)
+        await new Promise<void>((resolve) => {
+          const timeout = window.setTimeout(() => resolve(), 800);
+          iframe.onload = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+        });
+
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const opt = {
+              margin: 12,
+              filename: `${name}.pdf`,
+              image: { type: "jpeg", quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true },
+              jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
+            };
+            try {
+              (html2pdf as any)()
+                .set(opt)
+                .from(idoc.body)
+                .save()
+                .then(() => resolve())
+                .catch((e: any) => reject(e));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        } finally {
+          try {
+            document.body.removeChild(iframe);
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.error("Export PDF failed", err);
+        (window as any).__mt_toast?.("Export PDF failed", "error");
+      }
+    })();
+  }, [activeDoc, markdown, buildExportHtml]);
 
   // helper: detect whether content is mermaid (raw or fenced-only)
   const isMermaidContent = useCallback((s: string) => {
@@ -779,6 +877,23 @@ export default function App() {
     setDocs((arr) => [...arr, doc]);
     setActiveId(doc.id);
   }, [docs.length]);
+
+  const [exportType, setExportType] = useState<
+    "markdown" | "mermaid" | "html" | "pdf"
+  >("markdown");
+
+  const handleExport = useCallback(() => {
+    if (exportType === "markdown") {
+      handleDownload(false);
+    } else if (exportType === "mermaid") {
+      // force .mmd extension even if content heuristics don't detect mermaid
+      handleDownload(true);
+    } else if (exportType === "html") {
+      handleExportHtml();
+    } else if (exportType === "pdf") {
+      handleExportPdf();
+    }
+  }, [exportType, handleDownload, handleExportHtml, handleExportPdf]);
 
   const setMarkdown = useCallback(
     (next: string) => {
@@ -1027,6 +1142,15 @@ export default function App() {
             Import / Export
           </button>
           <button
+            className="theme-toggle shortcuts-button"
+            onClick={() => setShowShortcuts(true)}
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+            style={{ marginLeft: 6 }}
+          >
+            ?
+          </button>
+          <button
             className="theme-toggle"
             aria-label="Git sync"
             title="Sync with GitHub"
@@ -1043,15 +1167,6 @@ export default function App() {
             >
               <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.36-1.3-1.72-1.3-1.72-1.06-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.27 3.4.97.11-.75.41-1.27.75-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.07 11.07 0 0 1 2.9-.39c.99 0 1.99.13 2.9.39 2.2-1.5 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.41-5.27 5.69.42.36.8 1.08.8 2.17 0 1.57-.02 2.83-.02 3.22 0 .31.21.68.8.56A10.5 10.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z" />
             </svg>
-          </button>
-          <button
-            className="theme-toggle shortcuts-button"
-            onClick={() => setShowShortcuts(true)}
-            aria-label="Keyboard shortcuts"
-            title="Keyboard shortcuts (?)"
-            style={{ marginLeft: 6 }}
-          >
-            ?
           </button>
           <button
             className="theme-toggle"
@@ -1151,15 +1266,32 @@ export default function App() {
               >
                 Assets
               </button>
-              <button
-                onClick={() => {
-                  handleDownload();
-                  setPanelOpen(false);
-                }}
-                className="theme-toggle"
-              >
-                Export active tab
-              </button>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13 }}>Export:</span>
+                <div className="export-control">
+                  <select
+                    value={exportType}
+                    onChange={(e) => setExportType(e.target.value as any)}
+                    className="export-select"
+                    aria-label="Export format"
+                  >
+                    <option value="markdown">Markdown (.md)</option>
+                    <option value="mermaid">Mermaid (.mmd)</option>
+                    <option value="html">HTML (.html)</option>
+                    <option value="pdf">PDF (.pdf)</option>
+                  </select>
+                  <button
+                    onClick={() => {
+                      handleExport();
+                      setPanelOpen(false);
+                    }}
+                    className="theme-toggle export-button"
+                    aria-label="Export"
+                  >
+                    Export
+                  </button>
+                </div>
+              </label>
               <button
                 onClick={() => setPanelOpen(false)}
                 className="theme-toggle"
