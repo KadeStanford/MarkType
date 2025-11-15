@@ -11,29 +11,89 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
   const selectedText = model.getValueInRange(selection);
   let newText = "";
   let cursorOffset = 0; // offset to position cursor after insertion
+  let toggled = false; // whether we removed an existing wrapper
+
+  // compute start offset of selection so we can restore selection after edits
+  let startOffset: number | null = null;
+  try {
+    startOffset = model.getOffsetAt({
+      lineNumber: selection.startLineNumber,
+      column: selection.startColumn,
+    });
+  } catch (err) {
+    startOffset = null;
+  }
 
   switch (formatType) {
     case "bold":
-      newText = `**${selectedText || "bold text"}**`;
-      cursorOffset = selectedText ? 2 : -2; // if no selection, cursor goes inside
+      if (selectedText && selectedText.startsWith("**") && selectedText.endsWith("**")) {
+        newText = selectedText.slice(2, -2);
+        toggled = true;
+      } else {
+        newText = `**${selectedText || "bold text"}**`;
+      }
+      cursorOffset = selectedText ? 2 : -2;
       break;
 
     case "italic":
-      newText = `*${selectedText || "italic text"}*`;
+      if (selectedText && selectedText.startsWith("*") && selectedText.endsWith("*")) {
+        newText = selectedText.slice(1, -1);
+        toggled = true;
+      } else {
+        newText = `*${selectedText || "italic text"}*`;
+      }
       cursorOffset = selectedText ? 1 : -1;
       break;
 
     case "code":
-      newText = `\`${selectedText || "code"}\``;
+      if (
+        selectedText &&
+        selectedText.startsWith("`") &&
+        selectedText.endsWith("`") &&
+        !selectedText.startsWith("```") &&
+        !selectedText.endsWith("```")
+      ) {
+        newText = selectedText.slice(1, -1);
+        toggled = true;
+      } else {
+        newText = `\`${selectedText || "code"}\``;
+      }
       cursorOffset = selectedText ? 1 : -1;
+      break;
+
+    case "underline":
+      // Use HTML <u> tag since Markdown has no standard underline syntax
+      if (selectedText && selectedText.startsWith("<u>") && selectedText.endsWith("</u>")) {
+        newText = selectedText.slice(3, -4);
+        toggled = true;
+      } else {
+        newText = `<u>${selectedText || "underlined text"}</u>`;
+      }
+      cursorOffset = selectedText ? 0 : -4;
+      break;
+
+    case "strikethrough":
+      if (selectedText && selectedText.startsWith("~~") && selectedText.endsWith("~~")) {
+        newText = selectedText.slice(2, -2);
+        toggled = true;
+      } else {
+        newText = `~~${selectedText || "strikethrough"}~~`;
+      }
+      cursorOffset = selectedText ? 2 : -2;
       break;
 
     case "link":
       if (selectedText) {
-        // If text is selected, wrap it as link text
-        newText = `[${selectedText}](url)`;
-        // Position cursor at "url" to replace it
-        cursorOffset = -4; // moves cursor before closing )
+        // If selection already looks like [text](url), unwrap to just the text
+        const m = selectedText.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (m) {
+          newText = m[1];
+          toggled = true;
+          cursorOffset = 0;
+        } else {
+          newText = `[${selectedText}](url)`;
+          cursorOffset = -4; // moves cursor before closing )
+        }
       } else {
         newText = `[link text](url)`;
         cursorOffset = -11; // moves cursor to "link text"
@@ -55,8 +115,22 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
     },
   ]);
 
-  // Position cursor
-  if (cursorOffset !== 0) {
+  // If there was a selection, restore the selection to cover the replaced text
+  if (selectedText && startOffset !== null) {
+    try {
+      const startPos = model.getPositionAt(startOffset);
+      const endPos = model.getPositionAt(startOffset + newText.length);
+      editor.setSelection({
+        startLineNumber: startPos.lineNumber,
+        startColumn: startPos.column,
+        endLineNumber: endPos.lineNumber,
+        endColumn: endPos.column,
+      });
+    } catch (err) {
+      // ignore restore errors
+    }
+  } else if (cursorOffset !== 0) {
+    // Position cursor (for no-selection insertions)
     const position = editor.getPosition();
     if (cursorOffset < 0) {
       const newColumn = position.column + cursorOffset;
@@ -66,6 +140,7 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
       });
     }
   }
+
   editor.focus();
 }
 

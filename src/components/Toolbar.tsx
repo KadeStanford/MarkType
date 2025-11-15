@@ -5,6 +5,8 @@ import {
   FaCode,
   FaLink,
   FaListUl,
+  FaUnderline,
+  FaStrikethrough,
 } from "react-icons/fa";
 
 type ToolbarProps = {
@@ -18,6 +20,8 @@ export default function Toolbar({ onFormatClick, theme = "light" }: ToolbarProps
   const buttons = [
     { type: "bold", icon: <FaBold />, title: "Bold (Ctrl+B)" },
     { type: "italic", icon: <FaItalic />, title: "Italic (Ctrl+I)" },
+    { type: "underline", icon: <FaUnderline />, title: "Underline (Ctrl+U)" },
+    { type: "strikethrough", icon: <FaStrikethrough />, title: "Strikethrough (Alt+Shift+5)" },
     { type: "code", icon: <FaCode />, title: "Inline Code" },
     { type: "link", icon: <FaLink />, title: "Insert Link" },
     { type: "unorderedList", icon: <FaListUl />, title: "Unordered List" },
