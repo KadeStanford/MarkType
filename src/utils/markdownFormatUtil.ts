@@ -5,7 +5,7 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
 
   const selection = editor.getSelection();
   const model = editor.getModel();
-  
+
   if (!selection || !model) return;
 
   const selectedText = model.getValueInRange(selection);
@@ -26,7 +26,11 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
 
   switch (formatType) {
     case "bold":
-      if (selectedText && selectedText.startsWith("**") && selectedText.endsWith("**")) {
+      if (
+        selectedText &&
+        selectedText.startsWith("**") &&
+        selectedText.endsWith("**")
+      ) {
         newText = selectedText.slice(2, -2);
         toggled = true;
       } else {
@@ -36,7 +40,11 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
       break;
 
     case "italic":
-      if (selectedText && selectedText.startsWith("*") && selectedText.endsWith("*")) {
+      if (
+        selectedText &&
+        selectedText.startsWith("*") &&
+        selectedText.endsWith("*")
+      ) {
         newText = selectedText.slice(1, -1);
         toggled = true;
       } else {
@@ -63,7 +71,11 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
 
     case "underline":
       // Use HTML <u> tag since Markdown has no standard underline syntax
-      if (selectedText && selectedText.startsWith("<u>") && selectedText.endsWith("</u>")) {
+      if (
+        selectedText &&
+        selectedText.startsWith("<u>") &&
+        selectedText.endsWith("</u>")
+      ) {
         newText = selectedText.slice(3, -4);
         toggled = true;
       } else {
@@ -73,7 +85,11 @@ export function applyMarkdownFormat(editor: any, formatType: string) {
       break;
 
     case "strikethrough":
-      if (selectedText && selectedText.startsWith("~~") && selectedText.endsWith("~~")) {
+      if (
+        selectedText &&
+        selectedText.startsWith("~~") &&
+        selectedText.endsWith("~~")
+      ) {
         newText = selectedText.slice(2, -2);
         toggled = true;
       } else {
