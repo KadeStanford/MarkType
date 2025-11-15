@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 type Repo = {
   full_name: string;
@@ -41,10 +42,53 @@ export default function GitSyncPanel({
   onClose,
   onOpenRemoteFile,
 }: Props) {
-  const [token, setToken] = useState<string>(
-    localStorage.getItem("marktype:gh_token") || ""
-  );
+  // Helpers to obfuscate token in localStorage while remaining reversible
+  const encodeStoredToken = (t: string) => {
+    try {
+      const salt = Math.random().toString(36).slice(2, 10);
+      return btoa(`${salt}:${t}`);
+    } catch (_) {
+      return t;
+    }
+  };
+
+  const decodeStoredToken = (s: string | null) => {
+    if (!s) return "";
+    try {
+      const decoded = atob(s);
+      const idx = decoded.indexOf(":");
+      if (idx > 0) return decoded.slice(idx + 1);
+      return s;
+    } catch (_) {
+      // not base64, assume raw token
+      return s;
+    }
+  };
+
+  const setStoredToken = (t: string) => {
+    try {
+      const enc = encodeStoredToken(t);
+      localStorage.setItem("marktype:gh_token", enc);
+    } catch (_) {
+      try {
+        localStorage.setItem("marktype:gh_token", t);
+      } catch (_) {}
+    }
+  };
+
+  const getStoredToken = () => {
+    try {
+      const raw = localStorage.getItem("marktype:gh_token");
+      return decodeStoredToken(raw);
+    } catch (_) {
+      return "";
+    }
+  };
+
+  const [token, setToken] = useState<string>(getStoredToken());
+  const [showToken, setShowToken] = useState<boolean>(false);
   const [repos, setRepos] = useState<Repo[] | null>(null);
+  const [repoQuery, setRepoQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
   const [files, setFiles] = useState<string[] | null>(null);
@@ -57,7 +101,8 @@ export default function GitSyncPanel({
       );
     setLoading(true);
     try {
-      localStorage.setItem("marktype:gh_token", token);
+      // store obfuscated token for slightly improved privacy in storage
+      setStoredToken(token);
       const res = await fetch(
         "https://api.github.com/user/repos?per_page=100",
         {
@@ -192,136 +237,168 @@ export default function GitSyncPanel({
       aria-modal="true"
       onClick={onClose}
     >
-      <div className="import-panel" onClick={(e) => e.stopPropagation()}>
-        <h3>GitHub Sync</h3>
-        <p style={{ marginTop: 6 }}>
-          Enter a GitHub Personal Access Token (with repo scope) to browse your
-          repos and open markdown files.
-        </p>
-        <p style={{ marginTop: 6, fontSize: 12 }}>
-          Need a token? Follow the{" "}
-          <a
-            href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div
+        className="import-panel"
+        onClick={(e) => e.stopPropagation()}
+        style={{ minWidth: 920, maxWidth: "min(96vw,1200px)", padding: 16 }}
+      >
+        <div className="git-sync">
+          <h3>GitHub Sync</h3>
+          <p style={{ marginTop: 6 }}>
+            Enter a GitHub Personal Access Token (with repo scope) to browse
+            your repos and open markdown files.
+          </p>
+          <p style={{ marginTop: 6, fontSize: 12 }}>
+            Need a token? Follow the{" "}
+            <a
+              href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub guide to create a Personal Access Token
+            </a>{" "}
+            (select <code>repo</code> scope for private repositories).
+          </p>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginTop: 10,
+              alignItems: "center",
+            }}
           >
-            GitHub guide to create a Personal Access Token
-          </a>{" "}
-          (select <code>repo</code> scope for private repositories).
-        </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input
-            style={{ flex: 1 }}
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="ghp_... or token"
-          />
-          <button onClick={connect} className="theme-toggle">
-            Connect
-          </button>
-        </div>
-
-        {loading && <div style={{ marginTop: 8 }}>Loading…</div>}
-
-        {repos && (
-          <div style={{ marginTop: 12 }}>
-            <h4>Your repos</h4>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <select
-                style={{ flex: 1 }}
-                value={selectedRepo?.full_name || ""}
-                onChange={(e) => {
-                  const fn = e.target.value;
-                  const r =
-                    (repos || []).find((x) => x.full_name === fn) || null;
-                  if (r) loadRepoFiles(r);
-                }}
-              >
-                <option value="">Select a repo…</option>
-                {repos.map((r) => (
-                  <option key={r.full_name} value={r.full_name}>
-                    {r.full_name}
-                  </option>
-                ))}
-              </select>
+            <div
+              style={{ display: "flex", flex: 1, gap: 6, alignItems: "center" }}
+            >
+              <input
+                type={showToken ? "text" : "password"}
+                style={{ flex: 1, padding: "8px 10px" }}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="ghp_... or token"
+                aria-label="GitHub personal access token"
+              />
               <button
-                className="theme-toggle"
-                onClick={() => {
-                  if (selectedRepo) loadRepoFiles(selectedRepo);
-                  else if (repos && repos.length > 0) loadRepoFiles(repos[0]);
-                }}
+                title={showToken ? "Hide token" : "Show token"}
+                onClick={() => setShowToken((s) => !s)}
+                className="theme-toggle small"
+                style={{ padding: 8 }}
+                aria-label={showToken ? "Hide token" : "Show token"}
               >
-                Browse
+                {showToken ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-            <div style={{ marginTop: 8, maxHeight: 220, overflow: "auto" }}>
-              {/* quick list with direct Browse buttons as fallback */}
-              {(repos || []).slice(0, 12).map((r) => (
-                <div
-                  key={r.full_name}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: 6,
-                  }}
-                >
-                  <div style={{ fontSize: 13 }}>{r.full_name}</div>
-                  <div>
-                    <button
-                      className="theme-toggle"
-                      onClick={() => loadRepoFiles(r)}
-                    >
-                      Browse
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={connect} className="theme-toggle">
+                Connect
+              </button>
             </div>
           </div>
-        )}
 
-        {files && (
-          <div style={{ marginTop: 12 }}>
-            <h4>Markdown files in {selectedRepo?.full_name}</h4>
-            <div style={{ maxHeight: 260, overflow: "auto" }}>
-              {files.length === 0 && (
-                <div style={{ color: "#666" }}>No .md files found</div>
-              )}
-              {files.map((p) => (
-                <div
-                  key={p}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: 6,
-                  }}
-                >
-                  <div style={{ fontSize: 13 }}>{p}</div>
-                  <div>
-                    <button
-                      className="theme-toggle"
-                      onClick={() => openFile(p)}
-                    >
-                      Open
-                    </button>
+          {loading && <div style={{ marginTop: 8 }}>Loading…</div>}
+
+          {repos && (
+            <div className="git-sync-body">
+              <div className="git-sync-repos">
+                <h4>Your repos</h4>
+                {/* Repo selection is now handled via the searchable list below. */}
+                <div style={{ marginTop: 8 }}>
+                  <input
+                    className="repo-search"
+                    placeholder="Search repos…"
+                    value={repoQuery}
+                    onChange={(e) => setRepoQuery(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      border: "1px solid var(--toggle-border)",
+                    }}
+                  />
+                  <div style={{ marginTop: 8 }}>
+                    {(repos || [])
+                      .filter((r) =>
+                        repoQuery.trim()
+                          ? r.full_name
+                              .toLowerCase()
+                              .includes(repoQuery.trim().toLowerCase())
+                          : true
+                      )
+                      .map((r) => (
+                        <div
+                          key={r.full_name}
+                          className="repo-item"
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "8px 6px",
+                            alignItems: "center",
+                            borderRadius: 6,
+                          }}
+                        >
+                          <div style={{ fontSize: 13 }}>{r.full_name}</div>
+                          <div>
+                            <button
+                              className="theme-toggle"
+                              onClick={() => {
+                                setSelectedRepo(r);
+                                loadRepoFiles(r);
+                              }}
+                            >
+                              Browse
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 </div>
-              ))}
+              </div>
+              <div className="git-sync-files">
+                <h4>Markdown files in {selectedRepo?.full_name}</h4>
+                <div>
+                  {files && files.length === 0 && (
+                    <div style={{ color: "#666" }}>No .md files found</div>
+                  )}
+                  {files &&
+                    files.map((p) => (
+                      <div
+                        key={p}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: 6,
+                        }}
+                      >
+                        <div style={{ fontSize: 13 }}>{p}</div>
+                        <div>
+                          <button
+                            className="theme-toggle"
+                            onClick={() => openFile(p)}
+                          >
+                            Open
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 8,
-            marginTop: 12,
-          }}
-        >
-          <button className="theme-toggle" onClick={onClose}>
-            Close
-          </button>
+          {/* files are shown in the right-hand column above; no duplicate listing here */}
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+              marginTop: 12,
+            }}
+          >
+            <button className="theme-toggle" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -992,6 +992,119 @@ body {
   outline-offset: 6px;
 }
 
+/* Git sync panel specific layout */
+.import-panel .git-sync {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 80vh; /* prevent panel from growing too tall */
+  min-width: 520px;
+}
+
+.import-panel .git-sync .git-sync-token-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.import-panel .git-sync .git-sync-body {
+  display: flex;
+  gap: 12px;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.import-panel .git-sync .git-sync-repos,
+.import-panel .git-sync .git-sync-files {
+  background: transparent;
+  border-radius: 6px;
+  padding: 6px;
+  overflow: auto;
+}
+
+.import-panel .git-sync .git-sync-repos {
+  width: 40%;
+  min-width: 260px;
+  max-width: 420px; /* allow wider repo column to avoid horizontal scroll */
+  box-sizing: border-box;
+}
+
+/* Constrain repo column height and let it scroll (single scrollbar) */
+.import-panel .git-sync .git-sync-repos {
+  max-height: 56vh;
+  overflow: auto;
+}
+
+.import-panel .git-sync .git-sync-files {
+  flex: 1;
+}
+
+@media (max-width: 760px) {
+  .import-panel .git-sync .git-sync-body {
+    flex-direction: column;
+  }
+  .import-panel .git-sync .git-sync-repos {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Repo search input and items */
+.import-panel .git-sync .repo-search {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+}
+
+.import-panel .git-sync .repo-item {
+  transition: background 120ms ease;
+  display: flex;
+  align-items: center;
+}
+.import-panel .git-sync .repo-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Avoid horizontal scroll by truncating long repo names */
+.import-panel .git-sync .repo-item > div:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 90px);
+}
+
+/* Style select to match the panel */
+.import-panel .git-sync select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--toggle-border);
+  background: transparent;
+  color: var(--fg);
+}
+
+/* Custom scrollbars for the git-sync panes */
+.import-panel .git-sync .git-sync-repos::-webkit-scrollbar,
+.import-panel .git-sync .git-sync-files::-webkit-scrollbar {
+  width: 10px;
+}
+.import-panel .git-sync .git-sync-repos::-webkit-scrollbar-thumb,
+.import-panel .git-sync .git-sync-files::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 8px;
+}
+.import-panel .git-sync .git-sync-repos::-webkit-scrollbar-track,
+.import-panel .git-sync .git-sync-files::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.import-panel .git-sync .git-sync-files {
+  max-height: 56vh;
+  overflow: auto;
+}
+
 /* KaTeX context menu */
 .ctx-menu {
   background: var(--pane-bg);

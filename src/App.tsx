@@ -14,6 +14,7 @@ import DOMPurify from "dompurify";
 import { renderMath } from "./utils/renderMath";
 import Toolbar from "./components/Toolbar";
 import { applyMarkdownFormat } from "./utils/markdownFormatUtil";
+import { getStoredToken } from "./utils/ghTokenStorage";
 
 const DEFAULT_MARKDOWN = `# Welcome to MarkType
 
@@ -270,7 +271,7 @@ export default function App() {
 
   const fetchBranchesForDoc = useCallback(async (doc: Doc | undefined) => {
     if (!doc || !doc.git) return;
-    const token = localStorage.getItem("marktype:gh_token");
+    const token = getStoredToken();
     if (!token) return;
     setFetchingBranches(true);
     try {
@@ -321,7 +322,7 @@ export default function App() {
           "No git information found for this file.",
           "error"
         );
-      const token = localStorage.getItem("marktype:gh_token");
+      const token = getStoredToken();
       if (!token)
         return (window as any).__mt_toast?.(
           "No GitHub token found. Open Git sync and connect first.",
@@ -344,10 +345,7 @@ export default function App() {
             path
           )}?ref=${encodeURIComponent(branch)}`,
           {
-            headers: {
-              Authorization: `token ${token}`,
-              "Content-Type": "application/json",
-            },
+            headers: { Authorization: `token ${token}` },
           }
         );
         if (getRes.ok) {
@@ -818,7 +816,7 @@ export default function App() {
         );
         // if file is part of a Git-backed doc, upload to that repo; otherwise insert data URL
         if (activeDoc?.git) {
-          const token = localStorage.getItem("marktype:gh_token");
+          const token = getStoredToken();
           if (!token) {
             const ok = (window as any).__mt_confirm
               ? await (window as any).__mt_confirm(

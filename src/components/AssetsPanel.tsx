@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getStoredToken } from "../utils/ghTokenStorage";
 
 type Props = {
   open: boolean;
@@ -27,7 +28,7 @@ export default function AssetsPanel({
         setFiles([]);
         return;
       }
-      const token = localStorage.getItem("marktype:gh_token");
+      const token = getStoredToken();
       if (!token) {
         (window as any).__mt_toast?.("Connect GitHub to browse assets", "info");
         setFiles([]);
@@ -160,7 +161,7 @@ export default function AssetsPanel({
                     className="theme-toggle"
                     onClick={async () => {
                       try {
-                        const token = localStorage.getItem("marktype:gh_token");
+                        const token = getStoredToken();
                         if (!token)
                           return (window as any).__mt_toast?.(
                             "No GitHub token",
