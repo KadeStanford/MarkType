@@ -6,7 +6,7 @@ editor, preview, linting, and theming.
 
 ## Headings
 
-# H1 — Page Title
+# H1 — Page 
 
 ## H2 — Section
 
